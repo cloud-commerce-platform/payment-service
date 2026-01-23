@@ -1,0 +1,10 @@
+services:
+
+  payment-dbmate:
+    image: "ghcr.io/amacneil/dbmate:latest"
+    container_name: payment-service-dbmate
+    environment:
+      DATABASE_URL: ${RENDER_PAYMENT_SERVICE_URL}
+    volumes:
+      - ./db/migrations:/db/migrations
+    command: "up"
