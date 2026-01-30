@@ -1,7 +1,7 @@
+import type { PaymentDomainEvent } from "@alejotamayo28/event-contracts";
 import { v7 as uuid } from "uuid";
 import type { DomainEventDispatcher } from "../../../application/ports/DomainEventDispatcher";
 import type { MessagingService } from "../../../application/ports/MessagingService";
-import type { PaymentDomainEvent } from "../../../domain/events/PaymentDomainEvents";
 import type { OutgoingIntegrationEvent } from "../../events/IntegrationEvents";
 
 export class RabbitMQDomainEventDispatcher implements DomainEventDispatcher {
@@ -40,12 +40,15 @@ export class RabbitMQDomainEventDispatcher implements DomainEventDispatcher {
 		exchange: string;
 		routingKey: string;
 	} | null {
-		const eventMappings: Record<string, { exchange: string; routingKey: string }> = {
-			PAYMENT_VERIFIED: {
+		const eventMappings: Record<
+			PaymentDomainEvent["type"],
+			{ exchange: string; routingKey: string }
+		> = {
+			PAYMENT_DEDUCTED: {
 				exchange: "payment_events",
-				routingKey: "payment.verification.response",
+				routingKey: "payment.verification.verified",
 			},
-			PAYMENT_FAILED: {
+			PAYMENT_DEDUCTED_FAILED: {
 				exchange: "payment_events",
 				routingKey: "payment.verification.failed",
 			},

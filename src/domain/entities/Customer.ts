@@ -1,5 +1,3 @@
-import type { PaymentDomainEvent } from "../events/PaymentDomainEvents";
-
 export class Customer {
 	private id: string;
 	private balance: number;

@@ -1,3 +1,4 @@
+import { CancellationReason } from "@alejotamayo28/event-contracts";
 import { Payment } from "../../domain/entities/Payment";
 import type { CustomerRepository } from "../../domain/repositories/CustomerRepository";
 import type { PaymentRepository } from "../../domain/repositories/PaymentRepository";
@@ -19,7 +20,7 @@ export class ProcessPaymentUseCase {
 			const customer = await this.customerRepository.findById(customerId);
 
 			if (!customer) {
-				payment.markAsFailed("CUSTOMER_NOT_FOUND");
+				payment.markAsFailed(CancellationReason.PAYMENT_CUSTOMER_NOT_FOUND);
 				await this.paymentRepository.save(payment);
 				await this.domainEventDispatcher.dispatch(payment.getDomainEvents());
 				payment.clearDomainEvents();
@@ -27,7 +28,7 @@ export class ProcessPaymentUseCase {
 			}
 
 			if (!customer.hasSufficientBalance(amount)) {
-				payment.markAsFailed("INSUFFICIENT_FUNDS");
+				payment.markAsFailed(CancellationReason.PAYMENT_INSUFFICIENT_FUNDS);
 				await this.paymentRepository.save(payment);
 				await this.domainEventDispatcher.dispatch(payment.getDomainEvents());
 				payment.clearDomainEvents();

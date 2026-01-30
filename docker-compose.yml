@@ -1,10 +1,23 @@
 services:
+  payment-postgres:
+    image: postgres:15-alpine
+    container_name: payment-service-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
 
   payment-dbmate:
     image: "ghcr.io/amacneil/dbmate:latest"
     container_name: payment-service-dbmate
     environment:
-      DATABASE_URL: ${RENDER_PAYMENT_SERVICE_URL}
+      DATABASE_URL: postgresql://postgres:postgres@payment-postgres:5432/postgres?sslmode=disable
     volumes:
       - ./db/migrations:/db/migrations
-    command: "up"
+    command: -d db/migrations/ up
+    depends_on:
+      - payment-postgres

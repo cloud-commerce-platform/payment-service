@@ -3,11 +3,14 @@ import { Pool, type PoolClient } from "pg";
 
 dotenv.config();
 
+const connectionString =
+	process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5434/postgres";
+
+const isProd = process.env.NODE_ENV === "production";
+
 export const pool = new Pool({
-	connectionString: process.env.RENDER_PAYMENT_SERVICE_URL,
-	ssl: {
-		rejectUnauthorized: false,
-	},
+	connectionString,
+	ssl: isProd ? { rejectUnauthorized: false } : false,
 });
 
 export const newSession = async (): Promise<PoolClient> => {
@@ -15,7 +18,7 @@ export const newSession = async (): Promise<PoolClient> => {
 };
 
 export const closeSession = (client: PoolClient): void => {
-	return client.release(true);
+	client.release(true);
 };
 
 export const onTransaction = async <T>(

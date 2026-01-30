@@ -23,7 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@alejotamayo28/event-contracts": "^1.0.0",
+    "@alejotamayo28/event-contracts": "^1.0.2",
     "amqplib": "^0.10.9",
     "dotenv": "^17.2.3",
     "format": "^0.2.2",

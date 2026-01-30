@@ -1,4 +1,7 @@
-import type { PaymentDomainEvent } from "../events/PaymentDomainEvents";
+import type {
+	CancellationReason,
+	PaymentDomainEvent,
+} from "@alejotamayo28/event-contracts";
 import Entity from "./Entity";
 
 export class Payment extends Entity<PaymentDomainEvent> {
@@ -34,32 +37,27 @@ export class Payment extends Entity<PaymentDomainEvent> {
 	public markAsCompleted() {
 		this.status = "COMPLETED";
 		this.addDomainEvent({
-			type: "PAYMENT_VERIFIED",
+			type: "PAYMENT_DEDUCTED",
 			timestamp: new Date(),
 			aggregateId: this.getId(),
 			aggregateType: "Payment",
 			data: {
-				paymentId: this.getId(),
+				type: "PAYMENT_DEDUCTION_COMPLETED",
 				orderId: this.orderId,
-				customerId: this.customerId,
-				amount: this.amount,
-				status: this.status,
 			},
 		});
 	}
 
-	public markAsFailed(reason: string) {
+	public markAsFailed(reason: CancellationReason) {
 		this.status = "FAILED";
 		this.addDomainEvent({
-			type: "PAYMENT_FAILED",
+			type: "PAYMENT_DEDUCTED_FAILED",
 			timestamp: new Date(),
 			aggregateId: this.getId(),
 			aggregateType: "Payment",
 			data: {
-				paymentId: this.getId(),
+				type: "PAYMENT_DEDUCTION_FAILED",
 				orderId: this.orderId,
-				customerId: this.customerId,
-				amount: this.amount,
 				reason: reason,
 			},
 		});
