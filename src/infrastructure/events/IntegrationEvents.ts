@@ -1,6 +1,6 @@
-import type { IncomingOrderEvents } from "@/application/consumers/types/OrderEvents";
+import type { OrderDomainEvent } from "@alejotamayo28/event-contracts";
 
-type IncomingEvents = IncomingOrderEvents;
+type IncomingEvents = OrderDomainEvent;
 
 export interface OutgoingIntegrationEvent<T = unknown> {
 	eventId: string;

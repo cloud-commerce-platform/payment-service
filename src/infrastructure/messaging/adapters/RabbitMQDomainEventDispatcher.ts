@@ -44,13 +44,21 @@ export class RabbitMQDomainEventDispatcher implements DomainEventDispatcher {
 			PaymentDomainEvent["type"],
 			{ exchange: string; routingKey: string }
 		> = {
-			PAYMENT_DEDUCTED: {
+			PAYMENT_DEDUCTION_COMPLETED: {
 				exchange: "payment_events",
 				routingKey: "payment.verification.verified",
 			},
-			PAYMENT_DEDUCTED_FAILED: {
+			PAYMENT_DEDUCTION_FAILED: {
 				exchange: "payment_events",
 				routingKey: "payment.verification.failed",
+			},
+			PAYMENT_ROLLBACK_COMPLETED: {
+				exchange: "payment_events",
+				routingKey: "payment.rollback.completed",
+			},
+			PAYMENT_ROLLBACK_FAILED: {
+				exchange: "",
+				routingKey: "payment.rollback.failed",
 			},
 		};
 		return eventMappings[event.type] ?? null;

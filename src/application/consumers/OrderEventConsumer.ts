@@ -1,8 +1,8 @@
+import type { OrderCreatedEvent, OrderDomainEvent } from "@alejotamayo28/event-contracts";
 import type { IncomingIntegrationEvent } from "../../infrastructure/events/IntegrationEvents";
 import type { MessagingService } from "../ports/MessagingService";
 import type { PaymentService } from "../services/PaymentService";
 import { BaseEventConsumer } from "./BaseEventConsumer";
-import type { IncomingOrderEvents, OrderCreatedPayload } from "./types/OrderEvents";
 
 export class OrderEventConsumer extends BaseEventConsumer {
 	constructor(
@@ -16,20 +16,23 @@ export class OrderEventConsumer extends BaseEventConsumer {
 		const { exchange, queue, routingKeys } = this.setUpEventConfig(
 			"order_events",
 			"payment_service_queue",
-			["status.created"]
+			["status.created", "status.confirmed", "payment.rollback"]
 		);
 
 		this.messagingService.subscribe(
 			exchange,
 			queue,
 			routingKeys,
-			async (message: IncomingIntegrationEvent<IncomingOrderEvents>) => {
+			async (message: IncomingIntegrationEvent<OrderDomainEvent>) => {
 				try {
-					switch (message.eventType) {
+					switch (message.eventType as OrderDomainEvent["type"]) {
 						case "ORDER_CREATED":
 							await this.handleOrderCreated(
-								message as IncomingIntegrationEvent<OrderCreatedPayload>
+								message as IncomingIntegrationEvent<OrderCreatedEvent>
 							);
+							break;
+
+						case "ORDER_PAYMENT_ROLLBACK_REQUESTED":
 							break;
 
 						default:
@@ -44,14 +47,13 @@ export class OrderEventConsumer extends BaseEventConsumer {
 	}
 
 	private async handleOrderCreated(
-		message: IncomingIntegrationEvent<OrderCreatedPayload>
+		message: IncomingIntegrationEvent<OrderCreatedEvent>
 	): Promise<void> {
-		const { payload } = message;
-		console.log("[message]: ", message);
+		const { data } = message.payload;
 		return this.paymentService.processPayment(
-			payload.orderId,
-			payload.customerId,
-			payload.totalAmount
+			data.orderId,
+			data.customerId,
+			data.totalAmount
 		);
 	}
 }

@@ -1,37 +1,79 @@
+import type { PoolClient } from "pg";
 import { Payment } from "../../../../domain/entities/Payment";
 import type { PaymentRepository } from "../../../../domain/repositories/PaymentRepository";
+import { type PaymentDbStructure, saveStructures } from "../bulkOperations";
 import { DbContext } from "../dbContext";
 
 export class PostgresPaymentRepository implements PaymentRepository {
-	async save(payment: Payment): Promise<void> {
-		const sql = `
-			INSERT INTO payments.payments (id, order_id, customer_id, amount, status)
-			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (id) DO UPDATE SET
-				status = EXCLUDED.status
-		`;
+	static paymentSql = `
+  payments.id AS payments_id,
+  payments.order_id AS payments_order_id,
+  payments.customer_id AS payments_customer_id,
+  payments.amount AS payments_amount,
+  payments.status AS payments_status
+`;
 
+	private loadPayment(row: any): Payment {
+		return Payment.loadPayment(
+			row.payments_id,
+			row.payments_order_id,
+			row.payments_customer_id,
+			row.payments_amount,
+			row.payment_status
+		);
+	}
+
+	private getPaymentDbStructure(payment: Payment): PaymentDbStructure {
+		return {
+			id: payment.getId(),
+			order_id: payment.getOrderId(),
+			customer_id: payment.getCustomerId(),
+			amount: payment.getAmount(),
+			status: payment.getStatus(),
+		};
+	}
+
+	async savePayment(payment: Payment, poolClient: PoolClient): Promise<void> {
+		await this.savePayments([payment], poolClient);
+	}
+
+	async savePayments(payments: Payment[], poolClient: PoolClient): Promise<void> {
 		try {
-			const client = DbContext.getClient();
-			await client.query(sql, [
-				payment.getId(),
-				payment.getOrderId(),
-				payment.getCustomerId(),
-				payment.getAmount(),
-				payment.getStatus(),
-			]);
+			await saveStructures(
+				payments
+					.filter((payment) => {
+						return payment.getWasUpdated();
+					})
+					.map((payment) => {
+						return this.getPaymentDbStructure(payment);
+					}),
+				"payments.payments",
+				poolClient
+			);
 		} catch (error) {
+			console.error("Error saving multiple payments:", error);
 			throw new Error(
-				`Failed to save payment: ${error instanceof Error ? error.message : "Unknown error"}`
+				`Failed to save orders: ${error instanceof Error ? error.message : "Unknown error"}`
 			);
 		}
 	}
 
+	async save(payment: Payment): Promise<void> {
+		const client = DbContext.getClient();
+		await this.savePayment(payment, client);
+	}
+
+	async saveMany(payments: Payment[]): Promise<void> {
+		const client = DbContext.getClient();
+		await this.savePayments(payments, client);
+	}
+
 	async findById(id: string): Promise<Payment | null> {
 		const sql = `
-			SELECT id, order_id, customer_id, amount, status
+			SELECT ${PostgresPaymentRepository.paymentSql} 
 			FROM payments.payments
-			WHERE id = $1
+			WHERE payments.id = $1
+      FOR UPDATE
 		`;
 
 		try {
@@ -42,15 +84,7 @@ export class PostgresPaymentRepository implements PaymentRepository {
 				return null;
 			}
 
-			const row = rows[0];
-			const payment = new Payment(
-				row.order_id,
-				row.customer_id,
-				Number(row.amount),
-				row.status
-			);
-			payment.setId(row.id);
-			return payment;
+			return this.loadPayment(rows[0]);
 		} catch (error) {
 			throw new Error(
 				`Failed to find payment: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -60,9 +94,9 @@ export class PostgresPaymentRepository implements PaymentRepository {
 
 	async findByOrderId(orderId: string): Promise<Payment | null> {
 		const sql = `
-			SELECT id, order_id, customer_id, amount, status
+			SELECT ${PostgresPaymentRepository.paymentSql} 
 			FROM payments.payments
-			WHERE order_id = $1
+			WHERE payments.order_id = $1
 		`;
 
 		try {
@@ -73,15 +107,7 @@ export class PostgresPaymentRepository implements PaymentRepository {
 				return null;
 			}
 
-			const row = rows[0];
-			const payment = new Payment(
-				row.order_id,
-				row.customer_id,
-				Number(row.amount),
-				row.status
-			);
-			payment.setId(row.id);
-			return payment;
+			return this.loadPayment(rows[0]);
 		} catch (error) {
 			throw new Error(
 				`Failed to find payment by order id: ${error instanceof Error ? error.message : "Unknown error"}`

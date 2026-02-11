@@ -1,33 +1,15 @@
-import moment from "moment";
 import type { PoolClient } from "pg";
 import format from "pg-format";
 
-export interface InventoryItemDbStructure {
-	id: string;
-	sku: string;
-	total_quantity: number;
-	available_quantity: number;
-	reserved_quantity: number;
-}
-
-export interface ReservationDbStructure {
+export interface PaymentDbStructure {
 	id: string;
 	order_id: string;
+	customer_id: string;
+	amount: number;
 	status: string;
-	expires_at: Date | null;
 }
 
-export interface ReservationItemDbStructure {
-	id: string;
-	reservation_id: string;
-	item_id: string;
-	quantity: number;
-}
-
-export type entitiesDbStructure =
-	| InventoryItemDbStructure
-	| ReservationDbStructure
-	| ReservationItemDbStructure;
+export type entitiesDbStructure = PaymentDbStructure;
 
 export const saveStructures = async (
 	structures: entitiesDbStructure[],
@@ -46,13 +28,6 @@ export const saveStructuresWithConflictKey = async (
 	if (structures.length === 0) {
 		return;
 	}
-
-	structures.forEach((structure) => {
-		// reservation_items no tiene updated_at, manejamos esto con cuidado
-		if ("updated_at" in structure || !tableName.includes("reservation_items")) {
-			(structure as any).updated_at = moment.utc().toDate();
-		}
-	});
 
 	const columns = Object.keys(structures[0])
 		.map((key) => {
